@@ -77,7 +77,9 @@ async function request(method, url, body) {
   } catch (e) {
     return demoRequest(method, url, body)
   }
-  if (res.status === 404) {
+  // 静态托管（GitHub Pages）对 GET 返回 404、对 POST/PUT/DELETE 返回 405，
+  // 两者都说明后端不存在 → 切换游客演示模式
+  if (res.status === 404 || res.status === 405) {
     return demoRequest(method, url, body)
   }
   if (!res.ok) {
