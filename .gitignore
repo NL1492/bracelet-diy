@@ -6,6 +6,17 @@ dist/
 server/target/
 server/uploads/
 
+# 大体积媒体与遗留原型文件
+*.mp4
+1.js
+
+# 毕设文档（本地留存，不入库）
+docx文档/
+
+# AI 工具本地配置
+.claude/
+image/.claude/
+
 # 日志与临时文件
 *.log
 vite.config.js.timestamp-*.mjs
