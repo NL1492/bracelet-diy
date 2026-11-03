@@ -1,0 +1,68 @@
+# ============================================================
+# 手串DIY定制 — 应用配置
+# ============================================================
+server:
+  port: 8080
+
+spring:
+  application:
+    name: bracelet-server
+
+  # 文件上传（灵感演示视频）
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/bead?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 123123
+    # 连接池配置
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 30000
+
+  # JSON 序列化
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+# JWT 配置
+jwt:
+  # HMAC-SHA256 签名密钥（长度须 >= 32 字符）
+  secret: bracelet-diy-jwt-secret-key-2026-bead-customizer
+  # token 有效期（小时）
+  expire-hours: 72
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  # 实体扫描包
+  type-aliases-package: com.bracelet.entity
+  # Mapper XML 位置
+  mapper-locations: classpath*:mapper/**/*.xml
+  # 全局配置
+  global-config:
+    db-config:
+      # 主键类型：自增
+      id-type: auto
+      # 逻辑删除
+      logic-delete-field: isEnable
+      logic-delete-value: 0
+      logic-not-delete-value: 1
+  configuration:
+    # 下划线转驼峰（默认开启）
+    map-underscore-to-camel-case: true
+    # SQL 日志（开发环境开启）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 日志级别
+logging:
+  level:
+    com.bracelet: debug
+    com.bracelet.mapper: debug
