@@ -62,53 +62,48 @@ function checkAuth(json) {
   return json
 }
 
-/** 通用 POST 请求 */
-async function post(url, body) {
-  const res = await fetch(`${BASE_URL}${url}`, {
-    method: 'POST',
-    headers: buildHeaders(),
-    body: JSON.stringify(body),
-  })
+/** 游客演示模式（无后端时的本地兜底） */
+import { demoRequest } from './demoStore'
+
+/** 通用请求：网络不通或 404（静态托管无后端）时自动降级为游客演示模式 */
+async function request(method, url, body) {
+  let res
+  try {
+    res = await fetch(`${BASE_URL}${url}`, {
+      method,
+      headers: buildHeaders(),
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  } catch (e) {
+    return demoRequest(method, url, body)
+  }
+  if (res.status === 404) {
+    return demoRequest(method, url, body)
+  }
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}: ${res.statusText}`)
   }
   return checkAuth(await res.json())
+}
+
+/** 通用 POST 请求 */
+function post(url, body) {
+  return request('POST', url, body)
 }
 
 /** 通用 GET 请求 */
-async function get(url) {
-  const res = await fetch(`${BASE_URL}${url}`, {
-    headers: buildHeaders(),
-  })
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}: ${res.statusText}`)
-  }
-  return checkAuth(await res.json())
+function get(url) {
+  return request('GET', url)
 }
 
 /** 通用 PUT 请求 */
-async function put(url, body) {
-  const res = await fetch(`${BASE_URL}${url}`, {
-    method: 'PUT',
-    headers: buildHeaders(),
-    body: JSON.stringify(body || {}),
-  })
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}: ${res.statusText}`)
-  }
-  return checkAuth(await res.json())
+function put(url, body) {
+  return request('PUT', url, body || {})
 }
 
 /** 通用 DELETE 请求 */
-async function del(url) {
-  const res = await fetch(`${BASE_URL}${url}`, {
-    method: 'DELETE',
-    headers: buildHeaders(),
-  })
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}: ${res.statusText}`)
-  }
-  return checkAuth(await res.json())
+function del(url) {
+  return request('DELETE', url)
 }
 
 // ==================== 导出 API 方法 ====================

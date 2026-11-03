@@ -108,6 +108,7 @@ const engineMounted = ref(false)
 onMounted(() => {
   window.addEventListener('resize', handleResize)
   window.addEventListener('auth:required', handleAuthRequired)
+  window.addEventListener('demo:mode', onDemoMode)
   // 初始化时静默加载购物车数量用于导航角标
   loadCartBadge()
   // 启动时校验本地 token，恢复登录态
@@ -117,8 +118,15 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   window.removeEventListener('auth:required', handleAuthRequired)
+  window.removeEventListener('demo:mode', onDemoMode)
   engine.destroy()
 })
+
+/* 游客演示模式：接口不可达时由 api 层降级，这里只负责提示 */
+const isDemoMode = ref(false)
+function onDemoMode() {
+  isDemoMode.value = true
+}
 
 function handleResize() {
   engine.resize()
@@ -3259,6 +3267,15 @@ function saveDesign() {
           </div>
         </div>
 
+        <!-- 展示模式覆盖层：单击任意处退出展示 -->
+        <div
+          v-if="isShowcasing"
+          class="showcase-overlay"
+          @click="exitShowcase"
+        >
+          <span class="showcase-overlay__hint">单击任意处退出展示</span>
+        </div>
+
         <!-- ==================== 右侧悬浮功能按钮栏 ==================== -->
         <div
           class="floating-bar"
@@ -4195,6 +4212,11 @@ function saveDesign() {
         </div>
       </div>
     </div>
+
+    <!-- ==================== 游客演示模式提示条 ==================== -->
+    <Teleport to="body">
+      <div v-if="isDemoMode" class="demo-pill">游客演示模式 · 数据仅存于本浏览器</div>
+    </Teleport>
 
     <!-- ==================== Toast 消息 ==================== -->
     <Teleport to="body">
@@ -5343,6 +5365,53 @@ function saveDesign() {
   transform: translateY(-50%) translateX(40px);
   opacity: 0;
   pointer-events: none;
+}
+
+/* ---- 展示模式覆盖层：单击任意处退出 ---- */
+.showcase-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 7900;
+  cursor: pointer;
+  background: transparent;
+  animation: showcaseFade .45s ease both;
+}
+
+.showcase-overlay__hint {
+  position: fixed;
+  left: 50%;
+  bottom: 44px;
+  transform: translateX(-50%);
+  padding: 9px 22px;
+  border-radius: 999px;
+  background: rgba(26, 26, 26, .58);
+  color: #FBFAF6;
+  font-size: 13px;
+  letter-spacing: 2px;
+  backdrop-filter: blur(8px);
+  animation: showcaseFade .55s ease both;
+}
+
+@keyframes showcaseFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ---- 游客演示模式提示条 ---- */
+.demo-pill {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 9600;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(200, 169, 110, .92);
+  color: #241D15;
+  font-size: 12px;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 14px rgba(36, 29, 21, .18);
+  pointer-events: none;
+  animation: showcaseFade .5s ease both;
 }
 
 /* ---- 胶囊容器 ---- */
