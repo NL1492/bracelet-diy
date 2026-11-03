@@ -175,63 +175,32 @@ const showBlindBoxModal = ref(false)
 const deleteMode = ref(false)
 
 const blindBoxPlans = [
-  {
-    name: '清雅白玉',
-    desc: '白色系纯净搭配，温润如玉',
-    beads: [
-      { path: '/水晶/白色系/和田白玉.png', size: 10 },
-      { path: '/水晶/白色系/白月光.png', size: 10 },
-      { path: '/水晶/白色系/白珍珠.png', size: 8 },
-      { path: '/水晶/白色系/白水晶.png', size: 10 },
-      { path: '/水晶/白色系/白蝶贝.png', size: 8 },
-      { path: '/水晶/白色系/白玉髓.png', size: 10 },
-      { path: '/水晶/白色系/白阿塞.png', size: 10 },
-      { path: '/水晶/白色系/白幽灵.png', size: 9 },
-    ],
-  },
-  {
-    name: '朱砂红韵',
-    desc: '红色系热烈浓情，吉祥如意',
-    beads: [
-      { path: '/水晶/红色系/朱砂.png', size: 10 },
-      { path: '/水晶/红色系/红玛瑙.png', size: 10 },
-      { path: '/水晶/红色系/南红玛瑙.png', size: 10 },
-      { path: '/水晶/红色系/石榴石.png', size: 8 },
-      { path: '/水晶/红色系/红纹石.png', size: 10 },
-      { path: '/水晶/红色系/草莓晶.png', size: 9 },
-      { path: '/水晶/红色系/红碧玺.png', size: 10 },
-      { path: '/水晶/红色系/红兔毛.png', size: 9 },
-    ],
-  },
-  {
-    name: '碧海蓝天',
-    desc: '蓝色系清新自然，宁静致远',
-    beads: [
-      { path: '/水晶/蓝色系/海蓝宝.png', size: 10 },
-      { path: '/水晶/蓝色系/蓝月光.png', size: 10 },
-      { path: '/水晶/蓝色系/蓝晶石.png', size: 10 },
-      { path: '/水晶/蓝色系/青金石.png', size: 9 },
-      { path: '/水晶/蓝色系/天河石.png', size: 8 },
-      { path: '/水晶/蓝色系/蓝纹玛瑙.png', size: 10 },
-      { path: '/水晶/蓝色系/蓝砂石.png', size: 9 },
-      { path: '/水晶/蓝色系/坦桑石.png', size: 10 },
-    ],
-  },
-  {
-    name: '金玉满堂',
-    desc: '黄色系富贵吉祥，招财纳福',
-    beads: [
-      { path: '/水晶/黄色系/黄水晶.png', size: 10 },
-      { path: '/水晶/黄色系/金发晶.png', size: 10 },
-      { path: '/水晶/黄色系/黄虎眼.png', size: 10 },
-      { path: '/水晶/黄色系/黄玛瑙.png', size: 9 },
-      { path: '/水晶/黄色系/蜜蜡.png', size: 8 },
-      { path: '/水晶/黄色系/太阳石.png', size: 10 },
-      { path: '/水晶/黄色系/柠檬黄晶.png', size: 9 },
-      { path: '/水晶/黄色系/黄碧玺.png', size: 10 },
-    ],
-  },
+  { name: '清雅白玉', desc: '白色系纯净搭配，温润如玉', prefix: '/水晶/白色系/' },
+  { name: '朱砂红韵', desc: '红色系热烈浓情，吉祥如意', prefix: '/水晶/红色系/' },
+  { name: '碧海蓝天', desc: '蓝色系清新自然，宁静致远', prefix: '/水晶/蓝色系/' },
+  { name: '金玉满堂', desc: '黄色系富贵吉祥，招财纳福', prefix: '/水晶/黄色系/' },
 ]
+
+/**
+ * 开盒：从指定色系随机抽珠，按目标周长配珠
+ * 目标总周长 195~215mm → 建议手围约 15.5~16.2cm（与「建议手围 = 总周长 - 5.0 ~ -4.3」公式一致）
+ * 每次开盒的数量与组合都不同
+ */
+function rollBlindBox(prefix) {
+  const pool = [...beadMetaMap.keys()].filter(p => p.startsWith(prefix))
+  if (!pool.length) return []
+  const target = 195 + Math.floor(Math.random() * 21)
+  const beads = []
+  let total = 0
+  let guard = 0
+  while (total < target && guard++ < 60) {
+    const path = pool[Math.floor(Math.random() * pool.length)]
+    const size = beadMetaMap.get(path).defaultSize || 10
+    beads.push({ path, size })
+    total += size
+  }
+  return beads
+}
 
 function openBlindBoxPlan() {
   showBlindBoxModal.value = true
@@ -242,9 +211,15 @@ function closeBlindBoxModal() {
 }
 
 function applyBlindBoxPlan(plan) {
+  const beads = rollBlindBox(plan.prefix)
+  if (!beads.length) {
+    engine.showToast('该色系暂无可用素材')
+    return
+  }
   engine.reset()
-  // 按顺序发射每颗珠子
-  plan.beads.forEach((b, i) => {
+  // 发射间隔随数量自适应，保证整体开盒动画节奏一致
+  const interval = Math.min(350, Math.max(120, Math.round(4200 / beads.length)))
+  beads.forEach((b, i) => {
     setTimeout(() => {
       const colorIndex = [...b.path].reduce((sum, c) => sum + c.charCodeAt(0), 0)
       const BEAD_COLORS = [
@@ -260,15 +235,15 @@ function applyBlindBoxPlan(plan) {
         meta.subCategoryId || null
       )
       // 最后一颗发射后延迟串成手串
-      if (i === plan.beads.length - 1) {
+      if (i === beads.length - 1) {
         setTimeout(() => {
           engine.stringToBracelet()
         }, 800)
       }
-    }, i * 350)
+    }, i * interval)
   })
   closeBlindBoxModal()
-  engine.showToast(`已应用「${plan.name}」方案`)
+  engine.showToast(`已开出「${plan.name}」· ${beads.length} 颗随机搭配`)
 }
 
 function clearAllBeads() {
@@ -4234,7 +4209,7 @@ function saveDesign() {
                 </svg>
               </button>
             </div>
-            <p class="modal-card__subtitle">选择一款心仪的搭配，自动生成手串</p>
+            <p class="modal-card__subtitle">选择一款色系盲盒，每次开盒随机搭配、数量不同</p>
             <div class="modal-card__grid">
               <button
                 v-for="plan in blindBoxPlans"
@@ -4249,7 +4224,7 @@ function saveDesign() {
                 </div>
                 <h4 class="plan-card__name">{{ plan.name }}</h4>
                 <p class="plan-card__desc">{{ plan.desc }}</p>
-                <span class="plan-card__count">{{ plan.beads.length }} 颗珠子</span>
+                <span class="plan-card__count">随机搭配 · 按手围配珠</span>
               </button>
             </div>
           </div>
