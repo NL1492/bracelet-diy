@@ -402,6 +402,11 @@ const planDeleting = ref(false)
 const currentDesignId = ref(null)
 const designThumbnails = ref({})  // designId → dataURL 手串缩略图
 
+/** 创作数据：所有方案被应用次数合计（他人通过分享码载入即计一次） */
+const creatorApplied = computed(() =>
+  (designs.value || []).reduce((s, d) => s + (Number(d.shareUseCount) || 0), 0)
+)
+
 // 命名弹窗
 const showNameModal = ref(false)
 const nameModalInput = ref('')
@@ -1792,7 +1797,10 @@ function goToPlan() {
 function goToMine() {
   currentView.value = 'mine'
   activeNavTab.value = 'mine'
-  if (user.value) loadAddresses()
+  if (user.value) {
+    loadAddresses()
+    loadDesigns()   // 创作数据：方案列表含 shareUseCount
+  }
 }
 
 // ==================== 用户登录 ====================
@@ -4154,58 +4162,34 @@ function saveDesign() {
             <div class="mine-card mine-card--creator">
               <div class="mine-creator">
                 <h3 class="mine-creator__title">共同创作者</h3>
-                <p class="mine-creator__desc">分享您的设计方案，成为社区创作者</p>
-                <div class="mine-creator__stats">
-                  <div class="mine-creator__stat">
-                    <span class="mine-creator__stat-value">¥ 0</span>
-                    <span class="mine-creator__stat-label">预估共创基金</span>
-                  </div>
-                  <div class="mine-creator__stat">
-                    <span class="mine-creator__stat-value">0</span>
-                    <span class="mine-creator__stat-label">邀约位</span>
-                  </div>
-                </div>
-                <button class="mine-creator__btn">
+                <p class="mine-creator__desc">分享您的设计方案，让社区用上你的搭配</p>
+                <button class="mine-creator__btn" @click="goToPlan">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mine-creator__btn-icon">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                     <circle cx="8.5" cy="8.5" r="1.5"/>
                     <polyline points="21 15 16 10 5 21"/>
                   </svg>
-                  <span>生成分享海报</span>
+                  <span>去分享我的方案</span>
                 </button>
               </div>
             </div>
 
-            <!-- 模块 6：创作者状态面板 -->
+            <!-- 模块 6：创作数据（真实统计，来自分享码被载入记录） -->
             <div class="mine-card mine-card--status">
               <div class="mine-status">
                 <h3 class="mine-status__title">创作数据</h3>
-                <div class="mine-status__grid">
-                  <!-- 第一行 -->
+                <div class="mine-status__grid mine-status__grid--single">
                   <div class="mine-status__cell">
-                    <span class="mine-status__value">0</span>
+                    <span class="mine-status__value">{{ creatorApplied }}</span>
                     <span class="mine-status__label">被应用次数</span>
                   </div>
                   <div class="mine-status__vdivider"></div>
                   <div class="mine-status__cell">
-                    <span class="mine-status__value">¥ 0</span>
-                    <span class="mine-status__label">累计收益</span>
-                  </div>
-                  <!-- 水平分割线 -->
-                  <div class="mine-status__hdivider"></div>
-                  <div class="mine-status__hdivider"></div>
-                  <div class="mine-status__hdivider"></div>
-                  <!-- 第二行 -->
-                  <div class="mine-status__cell">
-                    <span class="mine-status__value">0</span>
-                    <span class="mine-status__label">本月新增</span>
-                  </div>
-                  <div class="mine-status__vdivider"></div>
-                  <div class="mine-status__cell">
-                    <span class="mine-status__value">¥ 0</span>
-                    <span class="mine-status__label">本月收益</span>
+                    <span class="mine-status__value">{{ designs.length }}</span>
+                    <span class="mine-status__label">已保存方案</span>
                   </div>
                 </div>
+                <p class="mine-status__tip">他人通过你的分享码载入方案，被应用次数 +1</p>
               </div>
             </div>
           </div>
@@ -8745,29 +8729,6 @@ function saveDesign() {
   margin: 0;
   line-height: 1.5;
 }
-.mine-creator__stats {
-  display: flex;
-  gap: 24px;
-  padding: 14px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-.mine-creator__stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.mine-creator__stat-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: #e2c88c;
-  letter-spacing: 0.04em;
-}
-.mine-creator__stat-label {
-  font-size: 10px;
-  color: #8b7b6b;
-  letter-spacing: 0.03em;
-}
 .mine-creator__btn {
   display: flex;
   align-items: center;
@@ -8817,6 +8778,16 @@ function saveDesign() {
   grid-template-rows: 1fr auto 1fr;
   gap: 0;
 }
+.mine-status__grid--single {
+  grid-template-rows: 1fr;
+}
+.mine-status__tip {
+  margin-top: 10px;
+  font-size: 10px;
+  color: #9B8E82;
+  letter-spacing: 0.03em;
+  text-align: center;
+}
 .mine-status__cell {
   display: flex;
   flex-direction: column;
@@ -8839,11 +8810,6 @@ function saveDesign() {
   width: 1px;
   background: #f0ece6;
   grid-row: 1 / -1;
-}
-.mine-status__hdivider {
-  height: 1px;
-  background: #f0ece6;
-  grid-column: 1 / -1;
 }
 
 /* ---- Responsive ---- */
@@ -8912,13 +8878,6 @@ function saveDesign() {
   }
   .mine-orders__item-label {
     font-size: 10px;
-  }
-
-  .mine-creator__stats {
-    gap: 16px;
-  }
-  .mine-creator__stat-value {
-    font-size: 16px;
   }
 
   .mine-status__value {
